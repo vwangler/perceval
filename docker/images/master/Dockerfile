@@ -8,7 +8,7 @@ ENV GIT_REV_PERCEVAL master
 # install dependencies
 
 RUN apt-get update && \
-    apt-get install -y git --no-install-recommends && \
+    apt-get install -y build-essential git --no-install-recommends && \
     git clone --depth 1 ${GIT_URL_PERCEVAL} -b ${GIT_REV_PERCEVAL} && \
     pip install -r perceval/requirements.txt perceval/ && \
     apt-get clean && \
