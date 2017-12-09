@@ -72,6 +72,8 @@ class GitHub(Backend):
     :param sleep_for_rate: sleep until rate limit is reset
     :param min_rate_to_sleep: minimun rate needed to sleep until
          it will be reset
+    :param labels: Issue labels to filter on (comma seperated string)
+    :param state: Issue state to filter on
     """
     version = '0.12.0'
 
@@ -79,7 +81,8 @@ class GitHub(Backend):
                  api_token=None, base_url=None,
                  tag=None, cache=None,
                  sleep_for_rate=False, min_rate_to_sleep=MIN_RATE_LIMIT,
-                 max_retries=MAX_RETRIES, default_sleep_time=DEFAULT_SLEEP_TIME):
+                 max_retries=MAX_RETRIES, default_sleep_time=DEFAULT_SLEEP_TIME,
+                 labels=None, state='all'):
         origin = base_url if base_url else GITHUB_URL
         origin = urijoin(origin, owner, repository)
 
@@ -89,7 +92,8 @@ class GitHub(Backend):
         self.api_token = api_token
         self.client = GitHubClient(owner, repository, api_token, base_url,
                                    sleep_for_rate, min_rate_to_sleep,
-                                   max_retries, default_sleep_time)
+                                   max_retries, default_sleep_time, labels,
+                                   state)
         self._users = {}  # internal users cache
 
     @classmethod
@@ -464,10 +468,13 @@ class GitHubClient(HttpClient, RateLimitHandler):
 
     def __init__(self, owner, repository, token, base_url=None,
                  sleep_for_rate=False, min_rate_to_sleep=MIN_RATE_LIMIT,
-                 default_sleep_time=DEFAULT_SLEEP_TIME, max_retries=MAX_RETRIES):
+                 default_sleep_time=DEFAULT_SLEEP_TIME, max_retries=MAX_RETRIES,
+                 labels=None, state='all'):
         self.owner = owner
         self.repository = repository
         self.token = token
+        self.labels = labels
+        self.state = state
 
         if base_url:
             base_url = urijoin(base_url, 'api', 'v3')
@@ -548,10 +555,11 @@ class GitHubClient(HttpClient, RateLimitHandler):
         """Get the issues from pagination"""
 
         payload = {
-            'state': 'all',
+            'state': self.state,
             'per_page': 30,
             'direction': 'asc',
-            'sort': 'updated'}
+            'sort': 'updated',
+            'labels': self.labels}
 
         if from_date:
             payload['since'] = from_date.isoformat()
@@ -663,6 +671,11 @@ class GitHubCommand(BackendCommand):
         group.add_argument('--min-rate-to-sleep', dest='min_rate_to_sleep',
                            default=MIN_RATE_LIMIT, type=int,
                            help="sleep until reset when the rate limit reaches this value")
+        group.add_argument('--labels', dest='labels', type=str,
+                           help="Filter issues by specific issue labels (comma seperated string)")
+        group.add_argument('--state', dest='state',
+                           default='all', type=str,
+                           help="Filter issues by specific state (open, closed, all)")
 
         # Generic client options
         group.add_argument('--max-retries', dest='max_retries',
