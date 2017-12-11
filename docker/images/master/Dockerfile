@@ -2,8 +2,8 @@ FROM python:3.4-slim
 
 MAINTAINER Alberto Martín <alberto.martin@bitergia.com>
 
-ENV GIT_URL_PERCEVAL https://github.com/grimoirelab/perceval.git
-ENV GIT_REV_PERCEVAL master
+ENV GIT_URL_PERCEVAL https://github.com/vwangler/perceval.git
+ENV GIT_REV_PERCEVAL gh-filter
 
 # install dependencies
 
