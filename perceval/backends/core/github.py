@@ -175,7 +175,7 @@ class GitHub(Backend):
                         continue
 
                     if field == 'user':
-                        issue[field + '_data'] = self.__get_user(issue[field]['login'])
+                        issue[field + '_data'] = self.__get_user(self.__get_login(issue[field]))
                     elif field == 'assignee':
                         issue[field + '_data'] = self.__get_issue_assignee(issue[field])
                     elif field == 'assignees':
@@ -222,7 +222,7 @@ class GitHub(Backend):
                     try:
                         if raw_item == '{USER}':
                             issue['user_data'] = \
-                                self.__fetch_user_and_organization_from_cache(issue['user']['login'], cache_items)
+                                self.__fetch_user_and_organization_from_cache(self.__get_login(issue['user']), cache_items)
                         elif raw_item == '{ASSIGNEE}':
                             assignee = self.__fetch_assignee_from_cache(cache_items)
                             issue['assignee_data'] = assignee
@@ -265,7 +265,7 @@ class GitHub(Backend):
             self._flush_cache_queue()
 
             for reaction in json.loads(raw_reactions):
-                reaction['user_data'] = self.__get_user(reaction['user']['login'])
+                reaction['user_data'] = self.__get_user(self.__get_login(reaction['user']))
                 reactions.append(reaction)
 
         return reactions
@@ -284,7 +284,7 @@ class GitHub(Backend):
 
             for comment in json.loads(raw_comments):
                 comment_id = comment.get('id')
-                comment['user_data'] = self.__get_user(comment['user']['login'])
+                comment['user_data'] = self.__get_user(self.__get_login(comment['user']))
                 comment['reactions_data'] = \
                     self.__get_issue_comment_reactions(comment_id, comment['reactions']['total_count'])
                 comments.append(comment)
@@ -310,7 +310,7 @@ class GitHub(Backend):
             self._flush_cache_queue()
 
             for reaction in json.loads(raw_reactions):
-                reaction['user_data'] = self.__get_user(reaction['user']['login'])
+                reaction['user_data'] = self.__get_user(self.__get_login(reaction['user']))
                 reactions.append(reaction)
 
         return reactions
@@ -321,7 +321,7 @@ class GitHub(Backend):
         self._push_cache_queue('{ASSIGNEE}')
         self._push_cache_queue(raw_assignee)
         self._flush_cache_queue()
-        assignee = self.__get_user(raw_assignee['login'])
+        assignee = self.__get_user(self.__get_login(raw_assignee))
 
         return assignee
 
@@ -333,9 +333,17 @@ class GitHub(Backend):
         self._flush_cache_queue()
         assignees = []
         for ra in raw_assignees:
-            assignees.append(self.__get_user(ra['login']))
+            assignees.append(self.__get_user(self.__get_login(ra)))
 
         return assignees
+
+    def __get_login(self, user):
+        """Helper for deleted/ghost users"""
+
+        if not user:
+            return None
+
+        return user['login']
 
     def __get_user(self, login):
         """Get user and org data for the login"""
@@ -378,7 +386,7 @@ class GitHub(Backend):
         user_tag = next(cache_items)
         raw_user = next(cache_items)
         raw_org = next(cache_items)
-        assignee = self.__get_user_and_organization(raw_assignee['login'], raw_user, raw_org)
+        assignee = self.__get_user_and_organization(self.__get_login(raw_assignee), raw_user, raw_org)
 
         return assignee
 
@@ -391,7 +399,7 @@ class GitHub(Backend):
             user_tag = next(cache_items)
             raw_user = next(cache_items)
             raw_org = next(cache_items)
-            a = self.__get_user_and_organization(a['login'], raw_user, raw_org)
+            a = self.__get_user_and_organization(self.__get_login(a), raw_user, raw_org)
             assignees.append(a)
 
         return assignees
@@ -405,7 +413,7 @@ class GitHub(Backend):
             user_tag = next(cache_items)
             raw_user = next(cache_items)
             raw_org = next(cache_items)
-            reaction['user_data'] = self.__get_user_and_organization(reaction['user']['login'], raw_user, raw_org)
+            reaction['user_data'] = self.__get_user_and_organization(self.__get_login(reaction['user']), raw_user, raw_org)
 
         return reactions
 
@@ -418,7 +426,7 @@ class GitHub(Backend):
             user_tag = next(cache_items)
             raw_user = next(cache_items)
             raw_org = next(cache_items)
-            r['user_data'] = self.__get_user_and_organization(r['user']['login'], raw_user, raw_org)
+            r['user_data'] = self.__get_user_and_organization(self.__get_login(r['user']), raw_user, raw_org)
 
         return reactions
 
@@ -431,7 +439,7 @@ class GitHub(Backend):
             user_tag = next(cache_items)
             raw_user = next(cache_items)
             raw_org = next(cache_items)
-            c['user_data'] = self.__get_user_and_organization(c['user']['login'], raw_user, raw_org)
+            c['user_data'] = self.__get_user_and_organization(self.__get_login(c['user']), raw_user, raw_org)
 
             reactions_tag = next(cache_items)
             reactions = self.__fetch_issue_comment_reactions_from_cache(cache_items)
