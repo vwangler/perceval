@@ -354,6 +354,10 @@ class GitHub(Backend):
 
         user = {}
 
+        # None of this info is timelined... so this (at this point)
+        # is a waisted request.
+        return user
+
         if not login:
             return user
 
@@ -447,6 +451,11 @@ class GitHub(Backend):
         pr['review_comments_data'] = []
 
     def __get_user_and_organization(self, login, raw_user, raw_org):
+
+        # None of this info is timelined... so this (at this point)
+        # is a waisted request.
+        return {}
+
         found = self._users.get(login)
 
         if not found:
@@ -617,7 +626,7 @@ class GitHubClient(HttpClient, RateLimitHandler):
         last_page = None  # last page
         url_next = urijoin(self.base_url, 'repos', self.owner, self.repository, path)
 
-        logger.debug("Get GitHub paginated items from " + url_next)
+        logger.info("Get GitHub paginated items from " + url_next)
 
         response = self.fetch(url_next, payload=payload)
 
