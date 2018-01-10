@@ -566,14 +566,21 @@ class GitHubClient(HttpClient, RateLimitHandler):
             'state': self.state,
             'per_page': 30,
             'direction': 'asc',
-            'sort': 'updated',
-            'labels': self.labels}
+            'sort': 'updated'}
 
         if from_date:
             payload['since'] = from_date.isoformat()
 
         path = urijoin("issues")
-        return self.fetch_items(path, payload)
+
+        result = []
+
+        # Cycle through multiple sets of labels
+        for label in self.labels:
+            payload['labels'] = label
+            result += self.fetch_items(path, payload)
+
+        return result
 
     def user(self, login):
         """Get the user information and update the user cache"""
@@ -679,7 +686,7 @@ class GitHubCommand(BackendCommand):
         group.add_argument('--min-rate-to-sleep', dest='min_rate_to_sleep',
                            default=MIN_RATE_LIMIT, type=int,
                            help="sleep until reset when the rate limit reaches this value")
-        group.add_argument('--labels', dest='labels', type=str,
+        group.add_argument('--labels', dest='labels', action='append',
                            help="Filter issues by specific issue labels (comma seperated string)")
         group.add_argument('--state', dest='state',
                            default='all', type=str,
