@@ -645,7 +645,7 @@ class GitHubClient(HttpClient, RateLimitHandler):
         last_page = None  # last page
         url_next = urijoin(self.base_url, 'repos', self.owner, self.repository, path)
 
-        logger.info("Get GitHub paginated items from " + url_next)
+        logger.debug("Get GitHub paginated items from " + url_next)
 
         response = self.fetch(url_next, payload=payload)
 
