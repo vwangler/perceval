@@ -167,24 +167,8 @@ class GitHub(Backend):
         prs_groups = self.client.prs(from_date=from_date)
 
         for raw_prs in prs_groups:
-            self._push_cache_queue('{PRS}')
-            self._push_cache_queue(raw_prs)
-            self._flush_cache_queue()
             prs = json.loads(raw_prs)
             for pr in prs:
-                self.__init_extra_pr_fields(pr)
-                for field in TARGET_PR_FIELDS:
-
-                    if not pr[field]:
-                        continue
-
-                    if field == 'user':
-                        pr[field + '_data'] = self.__get_user(self.__get_login(pr[field]))
-                    elif field == 'assignee':
-                        pr[field + '_data'] = self.__get_pr_assignee(pr[field])
-                    elif field == 'assignees':
-                        pr[field + '_data'] = self.__get_pr_assignees(pr[field])
-
                 # For PRs we don't have handy comments/reactions objects in the
                 # payload so we must always attempt to collect this data... and
                 # we also have the ability to distinguish between 'issue'
@@ -192,12 +176,7 @@ class GitHub(Backend):
                 pr['issue_comments_data'] = self.__get_pr_comments(pr['number'])
                 pr['review_comments_data'] = \
                         self.__get_pr_review_comments(pr['number'])
-
-                self._push_cache_queue('{PR-END}')
-                self._flush_cache_queue()
                 yield pr
-        self._push_cache_queue('{}{}')
-        self._flush_cache_queue()
 
     @metadata
     def fetch_from_cache(self):
@@ -258,16 +237,10 @@ class GitHub(Backend):
 
         comments = []
         group_comments = self.client.pr_comments(pr_number)
-        self._push_cache_queue('{COMMENTS}')
-        self._flush_cache_queue()
 
         for raw_comments in group_comments:
-            self._push_cache_queue(raw_comments)
-            self._flush_cache_queue()
-
             for comment in json.loads(raw_comments):
                 comment_id = comment.get('id')
-                comment['user_data'] = self.__get_user(self.__get_login(comment['user']))
                 comment['reactions_data'] = \
                     self.__get_pr_comment_reactions(comment_id, comment['reactions']['total_count'], 'issues')
                 comments.append(comment)
@@ -279,16 +252,10 @@ class GitHub(Backend):
 
         comments = []
         group_comments = self.client.pr_review_comments(pr_number)
-        self._push_cache_queue('{REVIEW-COMMENTS}')
-        self._flush_cache_queue()
 
         for raw_comments in group_comments:
-            self._push_cache_queue(raw_comments)
-            self._flush_cache_queue()
-
             for comment in json.loads(raw_comments):
                 comment_id = comment.get('id')
-                comment['user_data'] = self.__get_user(self.__get_login(comment['user']))
                 comment['reactions_data'] = \
                     self.__get_pr_comment_reactions(comment_id, comment['reactions']['total_count'], 'pulls')
                 comments.append(comment)
@@ -299,22 +266,14 @@ class GitHub(Backend):
         """Get reactions on pr comments"""
 
         reactions = []
-        self._push_cache_queue('{COMMENT-REACTIONS}')
-        self._flush_cache_queue()
 
         if total_count == 0:
-            self._push_cache_queue('[]')
-            self._flush_cache_queue()
             return reactions
 
         group_reactions = self.client.pr_comment_reactions(comment_id, api)
 
         for raw_reactions in group_reactions:
-            self._push_cache_queue(raw_reactions)
-            self._flush_cache_queue()
-
             for reaction in json.loads(raw_reactions):
-                reaction['user_data'] = self.__get_user(self.__get_login(reaction['user']))
                 reactions.append(reaction)
 
         return reactions
