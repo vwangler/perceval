@@ -156,41 +156,14 @@ class GitHub(Backend):
         :returns: a generator of issues
         """
 
-        self._purge_cache_queue()
-
         from_date = datetime_to_utc(from_date)
 
         issues_groups = self.client.issues(from_date=from_date)
 
         for raw_issues in issues_groups:
-            self._push_cache_queue('{ISSUES}')
-            self._push_cache_queue(raw_issues)
-            self._flush_cache_queue()
             issues = json.loads(raw_issues)
             for issue in issues:
-                self.__init_extra_issue_fields(issue)
-                for field in TARGET_ISSUE_FIELDS:
-
-                    if not issue[field]:
-                        continue
-
-                    if field == 'user':
-                        issue[field + '_data'] = self.__get_user(self.__get_login(issue[field]))
-                    elif field == 'assignee':
-                        issue[field + '_data'] = self.__get_issue_assignee(issue[field])
-                    elif field == 'assignees':
-                        issue[field + '_data'] = self.__get_issue_assignees(issue[field])
-                    elif field == 'comments':
-                        issue[field + '_data'] = self.__get_issue_comments(issue['number'])
-                    elif field == 'reactions':
-                        issue[field + '_data'] = \
-                            self.__get_issue_reactions(issue['number'], issue['reactions']['total_count'])
-
-                self._push_cache_queue('{ISSUE-END}')
-                self._flush_cache_queue()
                 yield issue
-        self._push_cache_queue('{}{}')
-        self._flush_cache_queue()
 
     @metadata
     def fetch_from_cache(self):
